@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "936033037093",
+    "project_id": "niche-ai-mvp-0215",
+    "storage_bucket": "niche-ai-mvp-0215.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:936033037093:android:85339ea64dab7166d488cc",
+        "android_client_info": {
+          "package_name": "com.mentalcoach.niche_ai_companion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfvoR4Vauvjxx1cCxmvTyjiiLRlPDL9Fc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
