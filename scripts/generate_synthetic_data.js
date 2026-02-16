@@ -28,11 +28,26 @@ const MODEL_NAME = "gemini-flash-latest";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
 const USER_PERSONAS = [
-    { type: 'INTJ', traits: 'Logical, strategic, perfectionist, hates inefficiency. Struggles with starting if plan isn\'t perfect.' },
-    { type: 'ENFP', traits: 'Enthusiastic, creative, easily distracted. Starts many things, finishes few. Needs emotional validation.' },
-    { type: 'ISTJ', traits: 'Responsible, detail-oriented, rule-follower. Gets stressed by chaos or unclear instructions.' },
-    { type: 'INFP', traits: 'Idealistic, empathetic, sensitive. Needs to feel the "meaning" of the goal. Easily discouraged by harsh feedback.' },
-    { type: 'ESTP', traits: 'Action-oriented, pragmatic, bored by theory. Wants immediate results. Ignores long-term planning.' }
+    // Analysts (NT)
+    { type: 'INTJ', traits: 'Strategic, logical, private, independent. Value competence and structure.' },
+    { type: 'INTP', traits: 'Innovative, curious, logical, reserved. Love abstract concepts, hate redundancy.' },
+    { type: 'ENTJ', traits: 'Bold, imaginative, strong-willed leaders. Efficient and organized.' },
+    { type: 'ENTP', traits: 'Smart, curious thinkers who cannot resist an intellectual challenge.' },
+    // Diplomats (NF)
+    { type: 'INFJ', traits: 'Quiet and mystical, yet very inspiring and tireless idealists.' },
+    { type: 'INFP', traits: 'Poetic, kind and altruistic people, always eager to help a good cause.' },
+    { type: 'ENFJ', traits: 'Charismatic and inspiring leaders, able to mesmerize their listeners.' },
+    { type: 'ENFP', traits: 'Enthusiastic, creative and sociable free spirits, who can always find a reason to smile.' },
+    // Sentinels (SJ)
+    { type: 'ISTJ', traits: 'Practical and fact-minded individuals, whose reliability cannot be doubted.' },
+    { type: 'ISFJ', traits: 'Very dedicated and warm protectors, always ready to defend their loved ones.' },
+    { type: 'ESTJ', traits: 'Excellent administrators, unsurpassed at managing things - or people.' },
+    { type: 'ESFJ', traits: 'Extraordinarily caring, social and popular people, always eager to help.' },
+    // Explorers (SP)
+    { type: 'ISTP', traits: 'Bold and practical experimenters, masters of all kinds of tools.' },
+    { type: 'ISFP', traits: 'Flexible and charming artists, always ready to explore and experience something new.' },
+    { type: 'ESTP', traits: 'Smart, energetic and very perceptive people, who truly enjoy living on the edge.' },
+    { type: 'ESFP', traits: 'Spontaneous, energetic and enthusiastic people - life is never boring around them.' }
 ];
 
 const ADMIN_PERSONAS = [
@@ -40,15 +55,50 @@ const ADMIN_PERSONAS = [
     { type: 'Warm Therapist', traits: 'Empathetic, validating, gentle, focuses on feelings and mental state. Asks "How does that make you feel?".' },
     { type: 'Strategic Coach', traits: 'Analytical, data-driven, focuses on KPIs and bottlenecks. Asks "What is the root cause?".' },
     { type: 'Motivational Speaker', traits: 'High energy, inspiring, uses metaphors and uplifting language. "You can do this!"' },
-    { type: 'Reality Check Manager', traits: 'Balanced, pragmatic, points out feasibility issues politely but firmly. "Is that realistic?"' }
+    { type: 'Reality Check Manager', traits: 'Balanced, pragmatic, points out feasibility issues politely but firmly. "Is that realistic?"' },
+    { type: 'Socratic Questioner', traits: 'Answers with questions. Deeply philosophical. Forces the user to find their own answers.' },
+    { type: 'Stoic Philosopher', traits: 'Focuses on what can be controlled. Calm, rational, unemotional. "Accept what you cannot change."' },
+    { type: 'Mindfulness Guru', traits: 'Focuses on the present moment, breathing, and awareness. "Be here now."' },
+    { type: 'Tiger Mom/Dad', traits: 'Extremely high expectations. Compares to others. "Why not A+?"' },
+    { type: 'Chill Buddy', traits: 'Casual, slang-heavy, relaxed. "No worries, bro. Just do what you can."' }
 ];
 
 const GOALS = [
-    "Write a novel",
-    "Lose 10kg",
-    "Launch a startup",
-    "Learn to code",
-    "Wake up at 5AM"
+    // Health & Fitness
+    "Lose 10kg in 3 months", "Run a full marathon", "Build muscle mass", "Quit smoking", "Drink 2L of water daily",
+    "Eat more vegetables", "Cut out sugar", "Start yoga", "Fix posture", "Sleep 8 hours a night",
+    "Do 100 pushups daily", "Learn to swim", "Reduce alcohol consumption", "Start a vegan diet", "Meditate daily",
+
+    // Career & Business
+    "Launch a startup", "Get promoted to manager", "Find a remote job", "Learn Python programming", "Start a YouTube channel",
+    "Write a business plan", "Network efficiently", "Improve public speaking", "Earn a professional certification", "Negotiate a higher salary",
+    "Start a side hustle", "Become a freelancer", "Optimize LinkedIn profile", "Learn digital marketing", "Create an online course",
+
+    // Finance
+    "Save $10,000", "Pay off credit card debt", "Start investing in stocks", "Buy a house", "Create a monthly budget",
+    "Build an emergency fund", "Open a retirement account", "Track daily expenses", "Improve credit score", "Learn about crypto",
+
+    // Creativity & Hobbies
+    "Write a novel", "Learn to play guitar", "Paint a portrait", "Start a blog", "Learn photography",
+    "Cook a new recipe weekly", "Learn to dance salsa", "Start a podcast", "Learn calligraphy", "Design a font",
+    "Write a screenplay", "Learn magic tricks", "Start gardening", "Knitting a scarf", "Learn pottery",
+
+    // Personal Growth & Learning
+    "Read 50 books a year", "Learn Spanish", "Wake up at 5AM", "Reduce screen time", "Keep a daily journal",
+    "Practice gratitude", "Learn speed reading", "Improve memory", "Learn chess", "Solve a Rubik's cube",
+    "Master Excel", "Learn history of Rome", "Understand quantum physics basics", "Learn sign language", "Improve emotional intelligence",
+
+    // Relationships & Social
+    "Make 5 new friends", "Call parents weekly", "Go on more dates", "Host a dinner party", "Volunteer at a shelter",
+    "Improve listening skills", "Resolve conflict with a friend", "Plan a family trip", "Write handwritten letters", "Join a social club",
+
+    // Lifestyle & Environment
+    "Declutter the house", "Adopt a minimalist lifestyle", "Move to a new city", "Renovate the kitchen", "Start composting",
+    "Reduce plastic waste", "Organize digital files", "Plan a world tour", "Buy a car", "Create a capsule wardrobe",
+
+    // Challenging / Abstract
+    "Find life purpose", "Overcome fear of failure", "Stop procrastinating", "Build self-confidence", "Learn to say no",
+    "Forgive an enemy", "Conquer fear of heights", "Live without internet for a week", "Write a will", "Understand philosophy"
 ];
 
 // --- Helper: Rate Limit Handling ---

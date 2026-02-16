@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'admin_data_viewer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,7 @@ class MyApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/chat': (context) => const ChatScreen(),
         '/admin': (context) => const AdminDashboard(),
+        '/admin/data': (context) => const AdminDataViewer(),
       },
     );
   }
@@ -130,8 +133,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Design Your Companion / 동반자 설정')),
+      appBar: AppBar(
+        title: const Text('Design Your Companion'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () => Navigator.pushNamed(context, '/admin'),
+          )
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -382,7 +394,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Wizard Admin Panel")),
+      appBar: AppBar(
+        title: const Text("Wizard Admin Panel"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            tooltip: 'View Synthetic Data',
+            onPressed: () => Navigator.pushNamed(context, '/admin/data'),
+          ),
+        ],
+      ),
       body: Row(
         children: [
           // User List Stream
