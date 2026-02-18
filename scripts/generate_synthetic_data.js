@@ -16,6 +16,18 @@ try {
 
 const db = admin.firestore();
 
+// --- Logging Setup ---
+const LOG_FILE = path.join(__dirname, '../data_gen_live.log');
+function log(msg, newline = true) {
+    const output = msg + (newline ? '\n' : '');
+    process.stdout.write(output);
+    fs.appendFileSync(LOG_FILE, output, 'utf8');
+}
+// Clear log on start
+fs.writeFileSync(LOG_FILE, '', 'utf8');
+
+const modelManager = require('./utils/model_manager');
+
 // --- Configuration ---
 const API_KEY = process.env.GEMINI_API_KEY;
 if (!API_KEY) {
@@ -23,8 +35,7 @@ if (!API_KEY) {
     process.exit(1);
 }
 
-// Using Gemini Flash Latest via REST API
-const MODEL_NAME = "gemini-flash-latest";
+const MODEL_NAME = modelManager.getModel('DATA_GENERATOR');
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
 const USER_PERSONAS = [
@@ -104,7 +115,7 @@ const GOALS = [
 // --- Helper: Rate Limit Handling ---
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function callGemini(prompt) {
+async function callGemini(prompt, retries = 10) {
     const payload = {
         contents: [{
             parts: [{ text: prompt }]
@@ -112,12 +123,9 @@ async function callGemini(prompt) {
     };
 
     let attempt = 0;
-    while (true) {
+    while (attempt < retries) {
         try {
-            attempt++;
-            if (attempt > 3) throw new Error("Too many retries (3)"); // Limit retries to prevent infinite loops
-
-            console.log(`[API Call] Attempt ${attempt}...`);
+            log(`[API Call] Attempt ${attempt + 1}/${retries}... `, false);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
@@ -129,34 +137,40 @@ async function callGemini(prompt) {
             });
             clearTimeout(timeoutId);
 
-            console.log(`[API Response] ${response.status} ${response.statusText}`);
-
             if (response.status === 429) {
-                const waitTime = Math.min(Math.pow(1.5, attempt) * 500, 5000);
-                console.log(`[Rate Limit] Retrying in ${Math.floor(waitTime)}ms...`);
+                const waitTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                log(`[Rate Limit] Retrying in ${Math.round(waitTime)}ms...`);
                 await sleep(waitTime);
+                attempt++;
                 continue;
             }
 
             if (!response.ok) {
                 const errText = await response.text();
-                throw new Error(`API Error ${response.status}: ${errText}`);
+                log(`\n[API Error] ${response.status}: ${errText}`);
+                attempt++;
+                await sleep(2000);
+                continue;
             }
 
             const data = await response.json();
             if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+                log("OK ✅");
                 return data.candidates[0].content.parts[0].text.trim();
             } else {
-                console.log("[Warn] Empty response. Retrying...");
+                log("[Warn] Empty response. Retrying...");
                 await sleep(1000);
+                attempt++;
                 continue;
             }
 
         } catch (error) {
-            console.log(`[Error] ${error.message}. Retrying...`);
+            log(`[Error] ${error.message}. Retrying...`);
+            attempt++;
             await sleep(2000);
         }
     }
+    throw new Error(`Too many retries (${retries}).`);
 }
 
 
@@ -166,7 +180,7 @@ async function generateConversation(userP, adminP, goal) {
     const history = [];
     const turns = 3;
 
-    console.log(`\n--- Simulating: User[${userP.type}] vs Coach[${adminP.type}] (Goal: ${goal}) ---`);
+    log(`\n--- Simulating: User[${userP.type}] vs Coach[${adminP.type}] (Goal: ${goal}) ---`);
 
     try {
         // 1. Initial User Complaint/Statement
@@ -179,7 +193,7 @@ async function generateConversation(userP, adminP, goal) {
         `;
         const msg1 = await callGemini(userPrompt1);
         history.push({ sender: 'user', text: msg1, persona: userP.type });
-        console.log(`[USER ${userP.type}]: ${msg1}`);
+        log(`[USER ${userP.type}]: ${msg1}`);
         await sleep(100);
 
         // Loop for interaction
@@ -194,7 +208,7 @@ async function generateConversation(userP, adminP, goal) {
             `;
             const coachMsg = await callGemini(coachPrompt);
             history.push({ sender: 'ai', text: coachMsg, persona: adminP.type });
-            console.log(`[COACH ${adminP.type}]: ${coachMsg}`);
+            log(`[COACH ${adminP.type}]: ${coachMsg}`);
             await sleep(100);
 
             // User Reply (if not last turn)
@@ -207,7 +221,7 @@ async function generateConversation(userP, adminP, goal) {
                 `;
                 const userMsg = await callGemini(userReplyPrompt);
                 history.push({ sender: 'user', text: userMsg, persona: userP.type });
-                console.log(`[USER ${userP.type}]: ${userMsg}`);
+                log(`[USER ${userP.type}]: ${userMsg}`);
                 await sleep(100);
             }
         }
@@ -220,32 +234,63 @@ async function generateConversation(userP, adminP, goal) {
             conversation: history,
             created_at: admin.firestore.FieldValue.serverTimestamp()
         });
-        process.stdout.write("Saved ✅\n");
+        log("Saved ✅", false);
     } catch (e) {
-        console.error("Error in conversation generation:", e.message);
+        log(`Error in conversation generation: ${e.message}`);
     }
 }
 
+// --- Limit Concurrency for stability ---
+const CONCURRENCY = 25; // Process 25 records in parallel
+
 async function main() {
-    console.log("Starting Synthetic Data Generation (Target: 1,000 records)...");
-    console.log("NOTE: '429 Rate Limit' messages are normal for the Free Tier. The script will automatically retry.");
+    log("Starting Optimized Synthetic Data Generation (Paid Tier)...");
+    log(`Concurrency: ${CONCURRENCY}, Parallel Mode`);
 
-    // Generate batch of 1000
-    const TOTAL_SAMPLES = 1000;
+    const TARGET_SAMPLES = 5000;
 
-    for (let i = 0; i < TOTAL_SAMPLES; i++) {
-        const u = USER_PERSONAS[Math.floor(Math.random() * USER_PERSONAS.length)];
-        const a = ADMIN_PERSONAS[Math.floor(Math.random() * ADMIN_PERSONAS.length)];
-        const g = GOALS[Math.floor(Math.random() * GOALS.length)];
+    try {
+        // 1. Get current count
+        log("Checking current progress... ", false);
+        const snapshot = await db.collection('synthetic_conversations').count().get();
+        let currentCount = snapshot.data().count;
+        log(`Found ${currentCount} existing records.`);
 
-        console.log(`\n[${i + 1}/${TOTAL_SAMPLES}] Generating...`);
-        await generateConversation(u, a, g);
+        if (currentCount >= TARGET_SAMPLES) {
+            log("✅ Target reached! No more data needed.");
+            return;
+        }
 
-        // High speed mode: minimal delay
-        await sleep(100);
+        let i = currentCount;
+        while (i < TARGET_SAMPLES) {
+            const batchSize = Math.min(CONCURRENCY, TARGET_SAMPLES - i);
+            const tasks = [];
+
+            log(`\n[${i + 1}-${i + batchSize}/${TARGET_SAMPLES}] Generating batch of ${batchSize}...`);
+
+            for (let j = 0; j < batchSize; j++) {
+                const u = USER_PERSONAS[Math.floor(Math.random() * USER_PERSONAS.length)];
+                const a = ADMIN_PERSONAS[Math.floor(Math.random() * ADMIN_PERSONAS.length)];
+                const g = GOALS[Math.floor(Math.random() * GOALS.length)];
+                tasks.push(generateConversation(u, a, g));
+            }
+
+            try {
+                await Promise.all(tasks);
+                i += batchSize;
+                // Minor pause between batches to avoid saturating I/O or other local limits
+                await sleep(500);
+            } catch (err) {
+                log(`\n[Batch Error] ${err.message}. Retrying in 2s...`);
+                await sleep(2000);
+            }
+        }
+
+        log(`\nDone! Total Records: ${TARGET_SAMPLES}`);
+
+    } catch (error) {
+        log(`Fatal Error: ${error.stack || error}`);
     }
-
-    console.log("\nDone!");
 }
 
 main();

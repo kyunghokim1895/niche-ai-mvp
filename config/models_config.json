@@ -1,0 +1,16 @@
+{
+    "development": {
+        "DATA_GENERATOR": "gemini-2.0-flash",
+        "CONVERSATION_ANALYZER": "gemini-1.5-flash",
+        "AI_COACH_CHAT": "gemini-1.5-flash",
+        "CONTENT_MODERATOR": "gemini-1.5-flash",
+        "EMBEDDING_MODEL": "text-embedding-004"
+    },
+    "production": {
+        "DATA_GENERATOR": "gemini-2.0-flash",
+        "CONVERSATION_ANALYZER": "gemini-1.5-pro",
+        "AI_COACH_CHAT": "gemini-1.5-pro",
+        "CONTENT_MODERATOR": "gemini-1.5-flash",
+        "EMBEDDING_MODEL": "text-embedding-004"
+    }
+}

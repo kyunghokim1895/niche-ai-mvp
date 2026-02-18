@@ -8,6 +8,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'admin_data_viewer.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+import 'core/theme/app_theme.dart';
+import 'shared/widgets/glass_container.dart';
+import 'shared/widgets/primary_button.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -23,12 +28,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Niche AI Companion',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-      ),
+      theme: AppTheme.darkTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthGate(),
@@ -133,102 +133,134 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Design Your Companion'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () => Navigator.pushNamed(context, '/admin'),
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "What is your ONE primary goal?\n가장 중요한 목표 하나는 무엇인가요?",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppTheme.primary.withOpacity(0.1),
+              AppTheme.background,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Design Your\nCompanion",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Let's personalize your journey.",
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
+                ),
+                const SizedBox(height: 48),
+                GlassContainer(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle("What is your primary goal?", "가장 중요한 목표 하나는 무엇인가요?"),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _goalController,
+                        decoration: const InputDecoration(
+                          hintText: "e.g., Write a book",
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle("Why creates Motivation.", "'왜'는 강력한 동기를 만듭니다."),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _whyController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          hintText: "Why do you want this?",
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GlassContainer(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _buildSectionTitle("Personality Type (MBTI)", "성향을 선택해주세요."),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedPersona,
+                        decoration: const InputDecoration(hintText: "Select your type"),
+                        items: userPersonas.map((persona) {
+                          return DropdownMenuItem(value: persona, child: Text(persona));
+                        }).toList(),
+                        onChanged: (val) => setState(() => _selectedPersona = val),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GlassContainer(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      _buildSectionTitle("Set Trigger Times", "트리거 시간 설정"),
+                      const SizedBox(height: 8),
+                      _buildTimeTile("Morning Priming", _morningTrigger, (time) => setState(() => _morningTrigger = time)),
+                      const Divider(color: Colors.white10),
+                      _buildTimeTile("Evening Reflection", _eveningTrigger, (time) => setState(() => _eveningTrigger = time)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 48),
+                PrimaryButton(
+                  text: "Start Journey",
+                  isLoading: _isLoading,
+                  onPressed: _saveProfile,
+                  icon: Icons.auto_awesome,
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _goalController,
-              decoration: const InputDecoration(
-                hintText: "e.g., Write a book / 예: 책 쓰기",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Why creates Motivation.\n'왜'는 강력한 동기를 만듭니다.",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _whyController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: "Why do you want this? / 왜 이 목표를 이루고 싶나요?",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Personality Type (MBTI)\n성향을 선택해주세요.",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: _selectedPersona,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Select your type / 유형 선택",
-              ),
-              items: userPersonas.map((persona) {
-                return DropdownMenuItem(value: persona, child: Text(persona));
-              }).toList(),
-              onChanged: (val) => setState(() => _selectedPersona = val),
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              "Set Trigger Times (Kairos)\n트리거 시간 설정 (카이로스)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text("Morning Priming / 아침 프라이밍"),
-              subtitle: Text(_morningTrigger?.format(context) ?? "Not set / 설정 안 됨"),
-              trailing: const Icon(Icons.access_time),
-              onTap: () async {
-                final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 8, minute: 0));
-                if (time != null) setState(() => _morningTrigger = time);
-              },
-            ),
-            ListTile(
-              title: const Text("Evening Reflection / 저녁 회고"),
-              subtitle: Text(_eveningTrigger?.format(context) ?? "Not set / 설정 안 됨"),
-              trailing: const Icon(Icons.access_time),
-              onTap: () async {
-                final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 20, minute: 0));
-                if (time != null) setState(() => _eveningTrigger = time);
-              },
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _saveProfile,
-                child: _isLoading 
-                  ? const CircularProgressIndicator() 
-                  : const Text("Start Journey / 여정 시작하기"),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String en, String ko) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(en, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(ko, style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+      ],
+    );
+  }
+
+  Widget _buildTimeTile(String title, TimeOfDay? time, Function(TimeOfDay) onSelected) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title, style: const TextStyle(fontSize: 15)),
+      subtitle: Text(
+        time?.format(context) ?? "Not set",
+        style: TextStyle(color: time == null ? AppTheme.textMuted : AppTheme.secondary),
+      ),
+      trailing: const Icon(Icons.access_time, size: 20),
+      onTap: () async {
+        final selected = await showTimePicker(context: context, initialTime: time ?? const TimeOfDay(hour: 8, minute: 0));
+        if (selected != null) onSelected(selected);
+      },
     );
   }
 }
@@ -287,89 +319,161 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Companion / 동반자'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'Companion',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
+            icon: const Icon(Icons.admin_panel_settings, color: Colors.white70),
             onPressed: () => Navigator.pushNamed(context, '/admin'),
           )
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user.uid)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                
-                final docs = snapshot.data!.docs;
-                return ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
-                    final isUser = data['sender'] == 'user';
-                    return Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isUser ? Colors.blue[900] : Colors.grey[800],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(data['text'] ?? ''),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topRight,
+            radius: 1.5,
+            colors: [
+              AppTheme.primary.withOpacity(0.15),
+              AppTheme.background,
+            ],
           ),
-          // Emergency Button
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            color: Colors.red[900]!.withOpacity(0.2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _sendEmergency,
-                    icon: const Icon(Icons.sos, color: Colors.red),
-                    label: const Text(
-                      "I'm Overwhelmed / 너무 벅차요",
-                      style: TextStyle(color: Colors.red),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: kToolbarHeight + 20),
+            // AI Status Orb Placeholder
+            Center(
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: AppTheme.primaryGradient,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.5),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
-                    style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
-                  ),
+                  ],
                 ),
-              ],
+                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('messages')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                  
+                  final docs = snapshot.data!.docs;
+                  return ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final data = docs[index].data() as Map<String, dynamic>;
+                      final isUser = data['sender'] == 'user';
+                      return _buildMessageBubble(data['text'] ?? '', isUser);
+                    },
+                  );
+                },
+              ),
+            ),
+            // Input Area
+            _buildInputArea(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(String text, bool isUser) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        child: GlassContainer(
+          borderRadius: 18,
+          opacity: isUser ? 0.2 : 0.1,
+          color: isUser ? AppTheme.primary : AppTheme.surface,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 15, height: 1.4),
             ),
           ),
-          // Input Area
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputArea() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: GlassContainer(
+                  borderRadius: 28,
+                  opacity: 0.1,
                   child: TextField(
                     controller: _messageController,
                     decoration: const InputDecoration(
-                      hintText: "Type a message... / 메시지를 입력하세요...",
-                      border: OutlineInputBorder(),
+                      hintText: "Speak your mind...",
+                      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                     ),
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
-              ],
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: _sendMessage,
+                child: Container(
+                  height: 52,
+                  width: 52,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: AppTheme.primaryGradient,
+                  ),
+                  child: const Icon(Icons.arrow_upward, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Emergency SOS
+          GestureDetector(
+            onTap: _sendEmergency,
+            child: Text(
+              "Too overwhelmed? Get help",
+              style: TextStyle(
+                color: AppTheme.accent.withOpacity(0.8),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ],

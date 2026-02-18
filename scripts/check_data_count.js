@@ -31,7 +31,8 @@ async function checkCount() {
             console.log("\n[Latest 3 Entries]");
             lastFew.forEach(doc => {
                 const data = doc.data();
-                console.log(`- ID: ${doc.id} | Goal: ${data.goal} | ${data.user_persona} vs ${data.admin_persona}`);
+                const createdAt = data.created_at ? data.created_at.toDate().toISOString() : 'N/A';
+                console.log(`- [${createdAt}] ID: ${doc.id} | Goal: ${data.goal} | ${data.user_persona} vs ${data.admin_persona}`);
             });
         }
 
